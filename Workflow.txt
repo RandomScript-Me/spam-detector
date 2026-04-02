@@ -1,0 +1,58 @@
+End-to-End Workflow
+Step A: Data Cleaning + EDA
+* Remove duplicates/nulls
+* Check class imbalance (ham usually >> spam)
+    * Analyze:
+    * message length
+    * most common spam words
+    * spam vs ham distribution
+Step B: Text Preprocessing
+Typical preprocessing pipeline:
+* lowercase
+* remove punctuation/special chars
+* tokenize
+* remove stopwords
+* stemming/lemmatization
+Step C: Feature Extraction
+Use:
+    * TfidfVectorizer (best practical baseline)
+    * ngram_range=(1,2)
+    * max_features tune (e.g. 3000–10000)
+Step D: Model Training
+Start with 3 models:
+* Multinomial Naive Bayes (strong baseline for text)
+* Logistic Regression
+* Linear SVM (LinearSVC)
+Use stratified split and cross-validation.
+Step E: Evaluation Metrics
+Because spam detection cares about false positives/negatives, track:
+* Precision (for spam class)
+* Recall (for spam class)
+* F1-score
+* Confusion matrix
+* ROC-AUC (optional)
+Step F: Save Artifacts
+Save both:
+* vectorizer (vectorizer.pkl)
+* best model (model.pkl)
+Step G: Deployment
+Create API endpoint:
+* POST /predict
+* input: { "text": "Congratulations! You won..." }
+* output: { "label": "spam", "confidence": 0.97 }
+
+Interview-Ready Enhancements
+* Handle class imbalance (class_weight='balanced' or resampling)
+* Add threshold tuning for precision/recall tradeoff
+* Add explainability (top spam-indicative words from linear model)
+* Dockerize app
+* CI pipeline + unit tests for preprocessing/prediction
+
+7-Day Mini Timeline
+* Day 1: Dataset + EDA
+* Day 2: Preprocessing pipeline
+* Day 3: Baseline model + metrics
+* Day 4: Model tuning + comparison
+* Day 5: Build API
+* Day 6: Streamlit demo + README
+* Day 7: Polish + deploy (Render/Railway)
