@@ -624,7 +624,7 @@
       btn.innerHTML   = '<span class="spinner"></span>Analyzing...';
 
       try {
-        const response = await fetch('http://127.0.0.1:8000/predict', {
+        const response = await fetch('https://spam-detector-g27s.onrender.com/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message })
@@ -650,7 +650,7 @@
           document.getElementById('probBar').style.width = spamProb + '%';
         }, 50);
 
-      } catch (err) {
+      } catch (err) {s
         error.textContent   = 'Cannot connect to the API. Make sure FastAPI server is running on port 8000.';
         error.style.display = 'block';
       }
