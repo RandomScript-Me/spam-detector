@@ -1,3 +1,5 @@
+from keep_alive import start
+start()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
