@@ -8,10 +8,14 @@ import pickle
 # ── Load the saved model & vectorizer ─────────────────────
 # We load them ONCE when the server starts, not on every request
 # This makes the API fast
-with open('model/spam_model.pkl', 'rb') as f:
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+with open(os.path.join(BASE_DIR, 'model/spam_model.pkl'), 'rb') as f:
     model = pickle.load(f)
 
-with open('model/vectorizer.pkl', 'rb') as f:
+with open(os.path.join(BASE_DIR, 'model/vectorizer.pkl'), 'rb') as f:
     vectorizer = pickle.load(f)
 
 # ── Create the FastAPI app ─────────────────────────────────
