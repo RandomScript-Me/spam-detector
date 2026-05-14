@@ -52,7 +52,8 @@ def predict(data: MessageInput):
     return {
         "message": data.message,
         "prediction": "spam" if prediction == 1 else "ham",
-        "confidence": f"{confidence}%"
+        "confidence": f"{confidence}%",
+        "spam_probability": round(spam_probability * 100, 2)
     }
 
 # ── Health check endpoint ──────────────────────────────────
