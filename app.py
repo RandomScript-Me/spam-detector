@@ -2,6 +2,8 @@ from keep_alive import start
 start()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import pickle
 
@@ -31,6 +33,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Serve frontend static files ────────────────────────────
+FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 # ── Define what the incoming request looks like ────────────
 # Pydantic automatically validates that the request has a "message" field
 class MessageInput(BaseModel):
@@ -56,8 +62,12 @@ def predict(data: MessageInput):
         "spam_probability": round(spam_probability * 100, 2)
     }
 
-# ── Health check endpoint ──────────────────────────────────
-# Just a simple route to confirm the server is running
+# ── Serve frontend at root ─────────────────────────────────
 @app.get("/")
 def root():
+    return FileResponse(os.path.join(FRONTEND_DIR, 'index.html'))
+
+# ── Health check endpoint ──────────────────────────────────
+@app.get("/health")
+def health():
     return {"status": "Spam Detector API is running!"}
