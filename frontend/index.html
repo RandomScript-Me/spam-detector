@@ -593,12 +593,24 @@
   </footer>
 
   <script>
+    const API = 'https://spam-detector-g27s.onrender.com';
+
     const examples = {
       spam1: "Congratulations! You've won a FREE iPhone. Click here NOW to claim your prize before it expires!",
       spam2: "URGENT: Your bank account has been compromised. Call this number immediately to verify: 0800-FREE-WIN",
       ham1:  "Hey, are we still on for lunch tomorrow? I was thinking the new place on 5th street",
       ham2:  "Just a reminder that the team meeting is at 3pm today in the main conference room"
     };
+
+    // Wake the server as soon as the page loads.
+    // Render free tier sleeps after inactivity; this silent ping
+    // starts the cold-start process before the user even clicks.
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch(API + '/').catch(() => {});
+      document.getElementById('messageInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.ctrlKey) checkSpam();
+      });
+    });
 
     function fillExample(key) {
       document.getElementById('messageInput').value = examples[key];
@@ -620,50 +632,62 @@
         return;
       }
 
-      btn.disabled    = true;
-      btn.innerHTML   = '<span class="spinner"></span>Analyzing...';
+      btn.disabled  = true;
+      btn.innerHTML = '<span class="spinner"></span>Analyzing...';
 
-      try {
-        const response = await fetch('/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
+      // Retry up to 3 times to handle Render cold starts (~30s spin-up)
+      const MAX_RETRIES = 3;
+      let lastErr;
 
-        const data = await response.json();
-        const isSpam = data.prediction === 'spam';
-        const spamProb = parseFloat(data.spam_probability);
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 1) {
+          error.textContent   = `⏳ Server is waking up… retrying (${attempt}/${MAX_RETRIES}). Please wait a moment.`;
+          error.style.display = 'block';
+          await new Promise(r => setTimeout(r, 8000));
+        }
 
-        result.className = 'result ' + data.prediction;
+        try {
+          const response = await fetch(API + '/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message }),
+            signal: AbortSignal.timeout(20000)
+          });
 
-        document.getElementById('resultIcon').textContent    = isSpam ? '🚨' : '✅';
-        document.getElementById('resultVerdict').textContent = isSpam ? 'Spam Detected' : 'Looks Legitimate';
-        document.getElementById('resultDesc').textContent    = isSpam
-          ? 'This message shows strong spam signals.'
-          : 'This message appears to be a normal SMS.';
-        document.getElementById('confidenceBadge').textContent = data.confidence;
+          const data = await response.json();
+          const isSpam = data.prediction === 'spam';
+          const spamProb = parseFloat(data.spam_probability);
 
-        result.style.display = 'block';
+          error.style.display = 'none';
+          result.className = 'result ' + data.prediction;
 
-        // Animate probability bar (width = spam probability)
-        setTimeout(() => {
-          document.getElementById('probBar').style.width = spamProb + '%';
-        }, 50);
+          document.getElementById('resultIcon').textContent    = isSpam ? '🚨' : '✅';
+          document.getElementById('resultVerdict').textContent = isSpam ? 'Spam Detected' : 'Looks Legitimate';
+          document.getElementById('resultDesc').textContent    = isSpam
+            ? 'This message shows strong spam signals.'
+            : 'This message appears to be a normal SMS.';
+          document.getElementById('confidenceBadge').textContent = data.confidence;
 
-      } catch (err) {
-        error.textContent   = 'Could not reach the server. It may be starting up — please wait a few seconds and try again.';
-        error.style.display = 'block';
+          result.style.display = 'block';
+
+          setTimeout(() => {
+            document.getElementById('probBar').style.width = spamProb + '%';
+          }, 50);
+
+          btn.disabled  = false;
+          btn.innerHTML = 'Analyze message';
+          return;
+
+        } catch (err) {
+          lastErr = err;
+        }
       }
 
+      error.textContent   = '❌ Could not reach the server after multiple attempts. Please try again in a minute.';
+      error.style.display = 'block';
       btn.disabled  = false;
       btn.innerHTML = 'Analyze message';
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('messageInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter' && e.ctrlKey) checkSpam();
-      });
-    });
   </script>
 </body>
 </html>
